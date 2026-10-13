@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../../services/ads/ad_config.dart';
@@ -22,6 +23,11 @@ class _BannerAdSlotState extends State<BannerAdSlot> {
   }
 
   void _loadBanner() {
+    if (kIsWeb ||
+        (defaultTargetPlatform != TargetPlatform.android &&
+            defaultTargetPlatform != TargetPlatform.iOS)) {
+      return;
+    }
     try {
       _bannerAd = BannerAd(
         adUnitId: AdConfig.bannerAdUnitId,

@@ -26,6 +26,11 @@ class AdsService {
   /// Initializes the Google Mobile Ads SDK without blocking app launch.
   Future<void> initialize() async {
     if (_isInitialized) return;
+    if (kIsWeb ||
+        (defaultTargetPlatform != TargetPlatform.android &&
+            defaultTargetPlatform != TargetPlatform.iOS)) {
+      return;
+    }
     try {
       await MobileAds.instance.initialize();
       _isInitialized = true;
