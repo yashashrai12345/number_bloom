@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/design_tokens.dart';
 import '../../../services/ads/ads_service.dart';
 import '../../settings/application/settings_controller.dart';
 import '../domain/game_rules.dart';
@@ -37,12 +38,13 @@ class GameStatsNotifier extends Notifier<GameStats> {
 
   void _persist() {
     final store = ref.read(localStoreProvider);
-    final snapshot = store.loadSnapshot();
+    final game = ref.read(gameControllerProvider);
+    final settings = ref.read(settingsControllerProvider);
     store.saveSnapshot(
-      activeGame: snapshot.activeGame,
-      bestScore: snapshot.bestScore,
+      activeGame: game,
+      bestScore: game.bestScore,
       stats: state,
-      settings: snapshot.settings,
+      settings: settings,
     );
   }
 }
@@ -106,12 +108,17 @@ class GameController extends Notifier<GameState> {
     // Lock input
     state = state.copyWith(isAnimating: true);
 
-    // Provide haptic feedback if merges occurred and haptics enabled
+    // Provide sensory feedback (audio & haptics)
+    final settings = ref.read(settingsControllerProvider);
     if (moveResult.mergesCount > 0) {
-      final settings = ref.read(settingsControllerProvider);
       if (settings.hapticsEnabled) {
         HapticFeedback.lightImpact();
       }
+      if (settings.soundEnabled) {
+        SystemSound.play(SystemSoundType.click);
+      }
+    } else if (settings.soundEnabled) {
+      SystemSound.play(SystemSoundType.click);
     }
 
     // Step 2: Spawn new tile in an empty cell
@@ -148,13 +155,20 @@ class GameController extends Notifier<GameState> {
       moveCount: newMoveCount,
       hasWon: hasWon,
       isGameOver: isGameOver,
-      isAnimating: false,
+      isAnimating: true,
     );
 
     state = nextState;
 
     // Step 6: Commit state immediately
     _persist(nextState);
+
+    // Enforce gesture locking duration during slide animation
+    if (!settings.reducedMotion) {
+      await Future.delayed(BloomTokens.slideDuration);
+    }
+
+    state = state.copyWith(isAnimating: false);
 
     return true;
   }
@@ -178,12 +192,13 @@ class GameController extends Notifier<GameState> {
 
   void _persist(GameState currentState) {
     final store = ref.read(localStoreProvider);
-    final snapshot = store.loadSnapshot();
+    final stats = ref.read(gameStatsProvider);
+    final settings = ref.read(settingsControllerProvider);
     store.saveSnapshot(
       activeGame: currentState,
       bestScore: currentState.bestScore,
-      stats: snapshot.stats,
-      settings: snapshot.settings,
+      stats: stats,
+      settings: settings,
     );
   }
 }

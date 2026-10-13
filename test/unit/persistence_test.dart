@@ -101,5 +101,38 @@ void main() {
       expect(snapshot.stats.gamesPlayed, equals(0));
       expect(snapshot.settings.hapticsEnabled, isTrue);
     });
+
+    test('Preserves isGameOver flag in saved game snapshot (PRD Section 7.2)', () async {
+      final prefs = await SharedPreferences.getInstance();
+      final store = LocalStore(prefs);
+
+      final board = Board.fromMatrix([
+        [2, 4, 2, 4],
+        [4, 2, 4, 2],
+        [2, 4, 2, 4],
+        [4, 2, 4, 2],
+      ]);
+      final gameOverState = GameState(
+        board: board,
+        score: 120,
+        bestScore: 120,
+        moveCount: 25,
+        hasWon: false,
+        winOverlayDismissed: false,
+        isGameOver: true,
+      );
+
+      await store.saveSnapshot(
+        activeGame: gameOverState,
+        bestScore: 120,
+        stats: const GameStats(),
+        settings: const PlayerSettings(),
+      );
+
+      final snapshot = store.loadSnapshot();
+      expect(snapshot.activeGame, isNotNull);
+      expect(snapshot.activeGame!.isGameOver, isTrue);
+      expect(snapshot.activeGame!.score, equals(120));
+    });
   });
 }

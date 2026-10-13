@@ -58,9 +58,7 @@ class LocalStore {
     try {
       final map = {
         'schemaVersion': currentSchemaVersion,
-        'currentGame': (activeGame != null && !activeGame.isGameOver)
-            ? activeGame.toJson()
-            : null,
+        'currentGame': activeGame?.toJson(),
         'bestScore': bestScore,
         'stats': stats.toJson(),
         'settings': settings.toJson(),
